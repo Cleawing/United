@@ -1,0 +1,6 @@
+*.class
+.history
+target/
+src_managed/
+.idea/
+
