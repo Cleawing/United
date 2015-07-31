@@ -5,13 +5,13 @@ object Dependencies {
     val typesafeConfig  = "1.3.0"
     val akka            = "2.4-M2"
     val akkaStreams     = "1.0"
-    val consul          = "1.0"
+    val json4sJackson   = "3.3.0.RC3"
     val scalaTest       = "2.2.5"
   }
 
   lazy val typesafeConfig = "com.typesafe" % "config" % Versions.typesafeConfig
 
-  lazy val consul = "com.codacy" %% "scala-consul" % Versions.consul
+  lazy val json4s = "org.json4s" %% "json4s-jackson" % Versions.json4sJackson
 
   lazy val akka = Seq(
     "com.typesafe.akka" %% "akka-actor"   % Versions.akka,
