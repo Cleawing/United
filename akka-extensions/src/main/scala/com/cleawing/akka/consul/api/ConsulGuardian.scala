@@ -1,9 +1,9 @@
-package com.cleawing.consul.api
+package com.cleawing.akka.consul.api
 
 import akka.actor.{Actor, Props}
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import com.cleawing.consul.Consul
+import com.cleawing.akka.consul.Consul
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 

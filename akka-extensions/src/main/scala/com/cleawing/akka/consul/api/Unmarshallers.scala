@@ -1,4 +1,4 @@
-package com.cleawing.consul.api
+package com.cleawing.akka.consul.api
 
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.Materializer

@@ -1,12 +1,12 @@
-package com.cleawing.consul
+package com.cleawing.akka.consul
 
 import java.util.UUID
 
-import akka.actor.Extension
-import akka.actor.ExtensionId
-import akka.actor.ExtensionIdProvider
-import akka.actor.ExtendedActorSystem
-import com.cleawing.consul.api.ConsulGuardian
+import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.pattern._
+import akka.util.Timeout
+import scala.concurrent.Future
+import scala.concurrent.duration._
 
 object Consul
   extends ExtensionId[ConsulExt]
@@ -17,11 +17,9 @@ object Consul
 }
 
 class ConsulExt(system: ExtendedActorSystem) extends Extension {
-  import akka.pattern._
-  import akka.util.Timeout
+  import api.ConsulGuardian
+  import api.Response._
 
-  import scala.concurrent.Future
-  import scala.concurrent.duration._
   val config = system.settings.config.getConfig("consul")
   val nodeId = UUID.randomUUID()
   val serviceId = s"akka-$nodeId"
@@ -37,7 +35,6 @@ class ConsulExt(system: ExtendedActorSystem) extends Extension {
 
   object agent {
     import api.Request.Agent._
-    import api.Response._
 
     def checks() : Future[CheckDescriptors] = request(Get.Checks).mapTo[CheckDescriptors]
     def services() : Future[ServiceDescriptors] = request(Get.Services).mapTo[ServiceDescriptors]
@@ -88,7 +85,6 @@ class ConsulExt(system: ExtendedActorSystem) extends Extension {
 
   object status {
     import api.Request.Status._
-
     def leader() : Future[String] = request(Get.Leader).mapTo[String]
     def peers() : Future[Seq[String]] = request(Get.Peers).mapTo[Seq[String]]
   }
@@ -96,7 +92,7 @@ class ConsulExt(system: ExtendedActorSystem) extends Extension {
   // TODO. Grab timeout from config
   protected implicit val timeout = Timeout(5.seconds)
 
-  private def request(req: api.Request) : Future[_] = {
+  private def request(req: com.cleawing.akka.consul.api.Request) : Future[_] = {
     guardian.ask(req)
   }
 }

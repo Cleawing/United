@@ -1,5 +1,5 @@
 import sbt._
-import Keys._
+import sbt.Keys._
 
 object Build extends Build {
   lazy val commonSettings = Seq(
@@ -18,26 +18,19 @@ object Build extends Build {
   )
 
   lazy val united = (project in file(".")).
-    aggregate(consul)
+    aggregate(`akka-extensions`)
 
-  lazy val consul = (project in file("consul")).
+  lazy val `akka-extensions` = (project in file("akka-extensions")).
     settings(commonSettings: _*).
     settings(
-      libraryDependencies += Dependencies.json4s,
-      initialCommands in console :=
+      libraryDependencies ++= Seq(Dependencies.typesafeConfig, Dependencies.json4s)
+        ++ Dependencies.akka ++ Dependencies.akkaStreamHttp,
+        initialCommands in console :=
         """
           |import akka.actor.ActorSystem
-          |import com.cleawing.consul.Consul
+          |import com.cleawing.akka.consul.Consul
           |val system = ActorSystem()
           |val consul = Consul(system)
         """.stripMargin
-    ).
-    dependsOn(akka)
-
-  lazy val akka = (project in file("akka")).
-    settings(commonSettings: _*).
-    settings(
-      libraryDependencies ++= Seq(Dependencies.typesafeConfig)
-        ++ Dependencies.akka ++ Dependencies.akkaStreamHttp
     )
 }

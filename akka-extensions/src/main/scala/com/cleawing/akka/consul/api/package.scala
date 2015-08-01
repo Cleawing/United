@@ -1,4 +1,4 @@
-package com.cleawing.consul
+package com.cleawing.akka.consul
 
 import akka.http.scaladsl.model.StatusCode
 

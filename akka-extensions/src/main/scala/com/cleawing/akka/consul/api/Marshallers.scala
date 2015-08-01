@@ -1,4 +1,4 @@
-package com.cleawing.consul.api
+package com.cleawing.akka.consul.api
 
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.{ContentTypes, HttpMethods, Uri, HttpRequest}
