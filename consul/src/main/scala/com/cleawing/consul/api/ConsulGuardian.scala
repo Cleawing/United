@@ -3,6 +3,7 @@ package com.cleawing.consul.api
 import akka.actor.{Actor, Props}
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.unmarshalling.Unmarshal
+import com.cleawing.consul.Consul
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -15,10 +16,23 @@ class ConsulGuardian(val host: String, val port: Int)
   import Response._
   import Marshallers._
   import Unmarshallers._
+  import ConsulGuardian._
 
   import context.dispatcher
+  private val consul = Consul(context.system)
+  private val checkId = s"service:${consul.serviceId}"
 
   def receive = {
+    case UpdateTTL =>
+      consul.agent.checks().foreach{ checks =>
+        if (!checks.contains(checkId)) consul.agent.service.register(consul.serviceName, Some(consul.serviceId), ttlCheck = Some("2s"))
+        consul.agent.check.pass(checkId, Some("ActorSystem is alive"))
+
+        checks.filter {
+          case (id, check) =>
+            id != checkId && check.ServiceID != consul.serviceId && check.ServiceName == consul.serviceName && check.Status == "critical" && check.Output == "TTL expired"
+        }.foreach(c => consul.agent.service.deRegister(c._2.ServiceID))
+      }
     case request : Request =>
       val origin = sender()
 
@@ -62,4 +76,5 @@ class ConsulGuardian(val host: String, val port: Int)
 
 object ConsulGuardian {
   def props(host: String, port: Int) : Props = Props(classOf[ConsulGuardian], host, port)
+  case object UpdateTTL
 }

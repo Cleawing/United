@@ -37,11 +37,9 @@ object Marshallers {
             lazy val params = Seq(("enable", enable.toString)) ++ reason.map("reason" -> _)
             Marshalling.Opaque(() => uriRequest("maintenance", params: _*).withMethod(HttpMethods.PUT))
           case Agent.Get.Join(address, wan) =>
-            // FIXME. What about address URI-encoding for safety?
             lazy val params = if (wan) Seq(("wan", "1")) else Seq()
             Marshalling.Opaque(() => uriRequest(s"join/$address", params: _*))
           case Agent.Get.ForceLeave(node) =>
-            // FIXME. What about node URI-encoding for safety?
             Marshalling.Opaque(() => uriRequest(s"force-leave/$node"))
           case register : Agent.Check.Put.RegisterCheck =>
             Marshalling.Opaque(() => uriRequest("check/register")
@@ -49,33 +47,25 @@ object Marshallers {
               .withEntity(ContentTypes.`application/json`, Serialization.write(register))
             )
           case Agent.Check.Get.Deregister(checkId) =>
-            // FIXME. What about checkId URI-encoding for safety?
             Marshalling.Opaque(() => uriRequest(s"check/deregister/$checkId"))
           case Agent.Check.Get.Pass(checkId, note) =>
-            // FIXME. What about checkId and note URI-encoding for safety?
             lazy val params = Seq() ++ note.map("note" -> _)
             Marshalling.Opaque(() => uriRequest(s"check/pass/$checkId", params: _*))
           case Agent.Check.Get.Warn(checkId, note) =>
-            // FIXME. What about checkId and note URI-encoding for safety?
             lazy val params = Seq() ++ note.map("note" -> _)
             Marshalling.Opaque(() => uriRequest(s"check/warn/$checkId", params: _*))
           case Agent.Check.Get.Fail(checkId, note) =>
-            // FIXME. What about checkId and note URI-encoding for safety?
             lazy val params = Seq() ++ note.map("note" -> _)
             Marshalling.Opaque(() => uriRequest(s"check/fail/$checkId", params: _*))
           case register : Agent.Service.Put.RegisterService =>
-            println(register)
-            println(register.getClass)
             Marshalling.Opaque(() => uriRequest("service/register")
               .withMethod(HttpMethods.PUT)
               .withEntity(ContentTypes.`application/json`, Serialization.write[Agent.Service.Put.RegisterService](register))
             )
           case Agent.Service.Get.Deregister(serviceId) =>
-          // FIXME. What about serviceId URI-encoding for safety?
             Marshalling.Opaque(() => uriRequest(s"service/deregister/$serviceId"))
           case Agent.Service.Put.Maintenance(serviceId, enable, reason) =>
             lazy val params = Seq(("enable", enable.toString)) ++ reason.map("reason" -> _)
-            // FIXME. What about serviceId URI-encoding for safety?
             Marshalling.Opaque(() => uriRequest(s"service/maintenance/$serviceId", params: _*).withMethod(HttpMethods.PUT))
         }
     }

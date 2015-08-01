@@ -1,5 +1,7 @@
 package com.cleawing.consul
 
+import java.util.UUID
+
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
@@ -21,11 +23,17 @@ class ConsulExt(system: ExtendedActorSystem) extends Extension {
   import scala.concurrent.Future
   import scala.concurrent.duration._
   val config = system.settings.config.getConfig("consul")
+  val nodeId = UUID.randomUUID()
+  val serviceId = s"akka-$nodeId"
+  val serviceName = s"akka-${system.name}"
 
   private val guardian = system.systemActorOf(
     ConsulGuardian.props(config.getString("host"), config.getInt("port")),
     "consul"
   )
+  import system.dispatcher
+
+  system.scheduler.schedule(0.second, 1.seconds, guardian, ConsulGuardian.UpdateTTL)
 
   object agent {
     import api.Request.Agent._
