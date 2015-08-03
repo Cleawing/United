@@ -6,30 +6,8 @@ package object api {
   case class ApiException(message: String, statusCode: Option[StatusCode]) extends Exception(message)
 
   sealed trait Request
+
   sealed trait AgentRequest extends Request
-  sealed trait StatusRequest extends Request
-
-  private[api] trait CheckValidation {
-    def Script: Option[String]
-    def HTTP: Option[String]
-    def Interval: Option[String]
-    def TTL: Option[String]
-
-    Seq(Script, HTTP, TTL).count(_.isDefined) match {
-      case 0 => throw new IllegalArgumentException("One of Script, HTTP or TTL field should be set")
-      case c if c > 1 => throw new IllegalArgumentException("Only one of Script, HTTP or TTL field should be set")
-      case _ => // OK
-    }
-    (Script, Interval) match {
-      case (Some(_), None) => throw new IllegalArgumentException("Interval required for Script check")
-      case _ => // OK
-    }
-    (HTTP, Interval) match {
-      case (Some(_), None) => throw new IllegalArgumentException("Interval required for HTTP check")
-      case _ => // OK
-    }
-  }
-
   object Request {
     object Agent {
       object Get {
@@ -58,7 +36,7 @@ package object api {
           ) extends AgentRequest with CheckValidation
         }
         object Get {
-          case class Deregister(checkId: String) extends AgentRequest
+          case class DeRegisterCheck(checkId: String) extends AgentRequest
           case class Pass(checkId: String, note: Option[String] = None) extends AgentRequest
           case class Warn(checkId: String, note: Option[String] = None) extends AgentRequest
           case class Fail(checkId: String, note: Option[String] = None) extends AgentRequest
@@ -86,15 +64,42 @@ package object api {
           case class Maintenance(serviceId: String, enable: Boolean, reason: Option[String] = None) extends AgentRequest
         }
         object Get {
-          case class Deregister(serviceId: String) extends AgentRequest
+          case class DeRegisterService(serviceId: String) extends AgentRequest
         }
       }
     }
 
+    sealed trait StatusRequest extends Request
     object Status {
       object Get {
         case object Leader extends StatusRequest
         case object Peers extends StatusRequest
+      }
+    }
+
+    sealed trait HealthRequest extends Request
+    object Health {
+
+    }
+
+    private[api] trait CheckValidation {
+      def Script: Option[String]
+      def HTTP: Option[String]
+      def Interval: Option[String]
+      def TTL: Option[String]
+
+      Seq(Script, HTTP, TTL).count(_.isDefined) match {
+        case 0 => throw new IllegalArgumentException("One of Script, HTTP or TTL field should be set")
+        case c if c > 1 => throw new IllegalArgumentException("Only one of Script, HTTP or TTL field should be set")
+        case _ => // OK
+      }
+      (Script, Interval) match {
+        case (Some(_), None) => throw new IllegalArgumentException("Interval required for Script check")
+        case _ => // OK
+      }
+      (HTTP, Interval) match {
+        case (Some(_), None) => throw new IllegalArgumentException("Interval required for HTTP check")
+        case _ => // OK
       }
     }
   }
@@ -118,6 +123,22 @@ package object api {
     )
     type Members = Seq[Member]
 
+    case class NodeDescriptor
+    (
+      Node: String,
+      Address: String
+    )
+
+    case class ServiceDescriptor
+    (
+      ID: String,
+      Service: String,
+      Tags: Set[String],
+      Address:String,
+      Port: Int
+    )
+    type ServiceDescriptors = Map[String, ServiceDescriptor]
+
     case class CheckDescriptor
     (
       Node: String,
@@ -131,15 +152,14 @@ package object api {
     )
     type CheckDescriptors = Map[String, CheckDescriptor]
 
-    case class ServiceDescriptor
+    case class HealthDescriptor
     (
-      ID: String,
-      Service: String,
-      Tags: Set[String],
-      Address:String,
-      Port: Int
+      Node: NodeDescriptor,
+      Service: ServiceDescriptor,
+      Checks: Seq[CheckDescriptor]
     )
-    type ServiceDescriptors = Map[String, ServiceDescriptor]
+
+
   }
 
 }

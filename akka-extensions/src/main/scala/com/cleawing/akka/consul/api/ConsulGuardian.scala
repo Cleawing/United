@@ -53,9 +53,9 @@ class ConsulGuardian(val host: String, val port: Int)
                 case Agent.Get.Self => Unmarshal(response.entity).to[Self]
                 case _: Agent.Put.Maintenance | _: Agent.Get.Join => Future(true)
                 case _: Agent.Get.ForceLeave => Future(())
-                case _: Agent.Check.Put.RegisterCheck | _: Agent.Check.Get.Deregister => Future(true)
+                case _: Agent.Check.Put.RegisterCheck | _: Agent.Check.Get.DeRegisterCheck => Future(true)
                 case _: Agent.Check.Get.Pass | _: Agent.Check.Get.Warn | _: Agent.Check.Get.Fail => Future(true)
-                case _: Agent.Service.Put.RegisterService | _: Agent.Service.Get.Deregister | _: Agent.Service.Put.Maintenance => Future(true)
+                case _: Agent.Service.Put.RegisterService | _: Agent.Service.Get.DeRegisterService | _: Agent.Service.Put.Maintenance => Future(true)
               }).map((target, _))
             case notOk =>
               request match {

@@ -3,15 +3,20 @@ import sbt._
 object Dependencies {
   object Versions {
     val typesafeConfig  = "1.3.0"
+    val finagle         = "6.27.0"
     val akka            = "2.4-M2"
     val akkaStreams     = "1.0"
     val json4sJackson   = "3.3.0.RC3"
+    val ramlParser      = "0.8.11"
     val scalaTest       = "2.2.5"
+    val scalaReflect    = "2.11.7"
   }
 
   lazy val typesafeConfig = "com.typesafe" % "config" % Versions.typesafeConfig
 
-  lazy val json4s = "org.json4s" %% "json4s-jackson" % Versions.json4sJackson
+  lazy val finagle = Seq(
+    "com.twitter" %% "finagle-httpx" % Versions.finagle
+  )
 
   lazy val akka = Seq(
     "com.typesafe.akka" %% "akka-actor"   % Versions.akka,
@@ -29,5 +34,11 @@ object Dependencies {
     "com.typesafe.akka" %% "akka-http-testkit-experimental"   % Versions.akkaStreams % "test"
   )
 
+  lazy val json4s = "org.json4s" %% "json4s-jackson" % Versions.json4sJackson
+
+  lazy val ramlParser = "org.raml" % "raml-parser" % Versions.ramlParser
+
   lazy val scalaTest = "org.scalatest" %% "scalatest" % Versions.scalaTest % "test"
+
+  lazy val scalaReflect =  "org.scala-lang" % "scala-reflect" % Versions.scalaReflect
 }

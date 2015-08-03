@@ -56,10 +56,14 @@ class ConsulExt(system: ExtendedActorSystem) extends Extension {
                    ttl: Option[String] = None,
                    serviceId: Option[String] = None) : Future[Boolean] =
         request(Check.Put.RegisterCheck(name, id, notes, script, http, interval, ttl, serviceId)).mapTo[Boolean]
-      def deRegister(checkId: String) : Future[Boolean] = request(Check.Get.Deregister(checkId)).mapTo[Boolean]
+      def deRegister(checkId: String) : Future[Boolean] = request(Check.Get.DeRegisterCheck(checkId)).mapTo[Boolean]
       def pass(checkId: String, note: Option[String] = None) : Future[Boolean] = request(Check.Get.Pass(checkId, note)).mapTo[Boolean]
       def warn(checkId: String, note: Option[String] = None) : Future[Boolean] = request(Check.Get.Warn(checkId, note)).mapTo[Boolean]
       def fail(checkId: String, note: Option[String] = None) : Future[Boolean] = request(Check.Get.Fail(checkId, note)).mapTo[Boolean]
+    }
+
+    object health {
+
     }
 
     object service {
@@ -77,7 +81,7 @@ class ConsulExt(system: ExtendedActorSystem) extends Extension {
           else None
         request(Service.Put.RegisterService(name, id, tags, address, port, check)).mapTo[Boolean]
       }
-      def deRegister(serviceId: String) : Future[Boolean] = request(Service.Get.Deregister(serviceId)).mapTo[Boolean]
+      def deRegister(serviceId: String) : Future[Boolean] = request(Service.Get.DeRegisterService(serviceId)).mapTo[Boolean]
       def maintenance(serviceId: String, enable: Boolean, reason: Option[String] = None) : Future[Boolean] =
         request(Service.Put.Maintenance(serviceId, enable, reason)).mapTo[Boolean]
     }

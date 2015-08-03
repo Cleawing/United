@@ -46,7 +46,7 @@ object Marshallers {
               .withMethod(HttpMethods.PUT)
               .withEntity(ContentTypes.`application/json`, Serialization.write(register))
             )
-          case Agent.Check.Get.Deregister(checkId) =>
+          case Agent.Check.Get.DeRegisterCheck(checkId) =>
             Marshalling.Opaque(() => uriRequest(s"check/deregister/$checkId"))
           case Agent.Check.Get.Pass(checkId, note) =>
             lazy val params = Seq() ++ note.map("note" -> _)
@@ -62,7 +62,7 @@ object Marshallers {
               .withMethod(HttpMethods.PUT)
               .withEntity(ContentTypes.`application/json`, Serialization.write[Agent.Service.Put.RegisterService](register))
             )
-          case Agent.Service.Get.Deregister(serviceId) =>
+          case Agent.Service.Get.DeRegisterService(serviceId) =>
             Marshalling.Opaque(() => uriRequest(s"service/deregister/$serviceId"))
           case Agent.Service.Put.Maintenance(serviceId, enable, reason) =>
             lazy val params = Seq(("enable", enable.toString)) ++ reason.map("reason" -> _)
