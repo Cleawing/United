@@ -257,6 +257,134 @@ baseUri: http://127.0.0.1:8500/v1
             200:
               description: |
                 Succesfully updated TTL check.
+/catalog:
+  /register:
+    put:
+      description: |
+         Low-level mechanism for registering or updating entries in the catalog.
+         Note: it is usually preferrable instead to use the agent endpoints for registration as they are simpler and perform anti-entropy.
+      body:
+        application/json: !!null
+      responses:
+        200:
+          description: |
+            Succesfully registration.
+  /deregister:
+    put:
+      description: |
+         Low-level mechanism for directly removing entries from the Catalog.
+         Note: it is usually preferrable instead to use the agent endpoints for deregistration as they are simpler and perform anti-entropy.
+      body:
+        application/json:
+      responses:
+        200:
+          description: |
+            Succesfully deregistration.
+  /datacenters:
+    get:
+      description: |
+        Used to return all the datacenters that are known by the Consul server.
+        This endpoint does not require a cluster leader and will succeed even during an availability outage.
+        Therefore, it can be used as a simple check to see if any Consul servers are routable.
+      responses:
+        200:
+          description: |
+            Succesfully retrieved list of datacenters.
+          body:
+            application/json: !!null
+  /nodes:
+    get:
+      description: |
+        Returns the nodes registered in a given DC. By default, the datacenter of the agent is queried.
+      queryParameters:
+        dc:
+          description: |
+            By default, the datacenter of the agent is queried; however, the dc can be provided using this query parameter.
+          type: string
+      responses:
+        200:
+          description: |
+            Succesfully retrieved list of nodes.
+          body:
+            application/json: !!null
+  /services:
+    get:
+      description: |
+        Returns the services registered in a given DC. By default, the datacenter of the agent is queried.
+      queryParameters:
+        dc:
+          description: |
+            By default, the datacenter of the agent is queried; however, the dc can be provided using this query parameter.
+          type: string
+      responses:
+        200:
+          description: |
+            Succesfully retrieved map of services.
+            The keys are the service names, and the array values provide all known tags for a given service.
+          body:
+            application/json: !!null
+  /service:
+    /{service}:
+      uriParameters:
+        service:
+          type: string
+          minLength: 1
+          required: true
+      get:
+        description: |
+          Returns the nodes providing a service in a given DC.
+        queryParameters:
+          dc:
+            description: |
+              By default, the datacenter of the agent is queried; however, the dc can be provided using this query parameter.
+            type: string
+          tag:
+            description: |
+              By default, all nodes matching the service are returned.
+              The list can be filtered by tag using this query parameter.
+            type: string
+        responses:
+          200:
+            description: |
+              Succesfully retrieved list of services.
+            body:
+              application/json: !!null
+          400:
+            description: |
+              Missing service name.
+            body:
+              text/plain: !!null
+          500:
+            description: |
+              No path to datacenter.
+            body:
+              text/plain: !!null
+  /node:
+    /{node}:
+      uriParameters:
+        node:
+          type: string
+          minLength: 1
+          required: true
+      get:
+        description: |
+          Returns the node's registered services.
+        queryParameters:
+          dc:
+            description: |
+              By default, the datacenter of the agent is queried; however, the dc can be provided using this query parameter.
+            type: string
+        responses:
+          200:
+            description: |
+              Succesfully retrieved node information with registered services.
+            body:
+              application/json: !!null
+          400:
+            description: |
+              Missing node name.
+            body:
+              text/plain: !!null
 /status:
   /leader:
     get:
@@ -280,35 +408,11 @@ baseUri: http://127.0.0.1:8500/v1
       uriParameters:
         node:
           type: string
+          minLength: 1
           required: true
       get:
         description: |
-          Returns the health info of a node
-        queryParameters:
-          dc:
-            description: |
-              By default, the datacenter of the agent is queried; however, the dc can be provided using this query parameter
-            type: string
-        responses:
-          200:
-            description: |
-              Succesfully retrieved resource
-            body:
-              application/json: !!null
-          500:
-            description: |
-              No path to datacenter
-            body:
-              text/plain: !!null
-  /checks:
-    /{service}:
-      uriParameters:
-        service:
-          type: string
-          required: true
-      get:
-        description: |
-          Returns the checks of a service
+          Returns the checks specific to the node provided on the path.
         queryParameters:
           dc:
             description: |
@@ -317,12 +421,48 @@ baseUri: http://127.0.0.1:8500/v1
         responses:
           200:
             description: |
-              Succesfully retrieved resource
+              Succesfully retrieved list of checks.
             body:
               application/json: !!null
+          400:
+            description: |
+              Missing node name.
+            body:
+              text/plain: !!null
           500:
             description: |
-              No path to datacenter
+              No path to datacenter.
+            body:
+              text/plain: !!null
+  /checks:
+    /{service}:
+      uriParameters:
+        service:
+          type: string
+          minLength: 1
+          required: true
+      get:
+        description: |
+          Returns the checks associated with the service provided on the path.
+        queryParameters:
+          dc:
+            description: |
+              By default, the datacenter of the agent is queried; however, the dc can be provided using this query parameter.
+            type: string
+        responses:
+          200:
+            description: |
+              Succesfully retrieved list of checks.
+            body:
+              application/json: !!null
+          400:
+            description: |
+              Missing service name.
+            body:
+              text/plain: !!null
+          500:
+            description: |
+              No path to datacenter.
             body:
               text/plain: !!null
   /service:
@@ -333,7 +473,7 @@ baseUri: http://127.0.0.1:8500/v1
           required: true
       get:
         description: |
-          Returns the nodes and health info of a service
+          Returns the nodes providing the service indicated on the path.
         queryParameters:
           dc:
             description: |
@@ -352,12 +492,17 @@ baseUri: http://127.0.0.1:8500/v1
         responses:
           200:
             description: |
-              Succesfully retrieved resource
+              Succesfully retrieved list of nodes with services on them associated checks.
             body:
               application/json: !!null
+          400:
+            description: |
+              Missing service name.
+            body:
+              text/plain: !!null
           500:
             description: |
-              No path to datacenter
+              No path to datacenter.
             body:
               text/plain: !!null
   /state:
@@ -380,11 +525,16 @@ baseUri: http://127.0.0.1:8500/v1
         responses:
           200:
             description: |
-              Succesfully retrieved resource
+              Succesfully retrieved list of checks.
             body:
               application/json: !!null
+          400:
+            description: |
+              Missing check state.
+            body:
+              text/plain: !!null
           500:
             description: |
-              No path to datacenter
+              No path to datacenter.
             body:
               text/plain: !!null

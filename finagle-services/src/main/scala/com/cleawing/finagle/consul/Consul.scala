@@ -64,6 +64,29 @@ class Consul(host: String, port: Int = 8500)(implicit ec: ExecutionContext) {
           client.put[Boolean]("maintenance/{serviceid}", Seq("serviceid" -> serviceId), Seq("enable" -> enable.toString) ++ reason.map("reason" -> _))
       }
     }
+
+    object catalog {
+      protected implicit val endpointUri = "/catalog"
+      // Register and deRegister - not tested
+      def register(descriptor: RegisterNode) = client.put[Boolean]("register", payload = Some(descriptor))
+      def deRegister(descriptor: DeregisterNode) = client.put[Boolean]("deregister", payload = Some(descriptor))
+      def datacenters() = client.get[Seq[String]]("datacenters")
+      def nodes() = client.get[Seq[NodeDescriptor]]("nodes")
+      def services() = client.get[Map[String, Set[String]]]("services")
+      def service(serviceName: String, dc: Option[String] = None, tag: Option[String] = None) =
+        client.get[Seq[NodeServiceDescriptor]](
+          "service/{service}",
+          Seq("service" -> serviceName),
+          dc.map("dc" -> _) ++ tag.map("tag" -> _)
+        )
+      def node(nodeId: String, dc: Option[String] = None) =
+        client.get[NodeServiceDescriptors](
+          "node/{node}",
+          Seq("node" -> nodeId),
+          dc.map("dc" -> _)
+        )
+    }
+
     object status {
       protected implicit val endpointUri = "/status"
       def leader() = client.get[String]("leader")

@@ -32,11 +32,28 @@ package object v1 {
   (
     ID: String,
     Service: String,
-    Tags: Set[String],
-    Address:String,
-    Port: Int
+    Tags: Option[Set[String]] = None,
+    Address: Option[String] = None,
+    Port: Option[Int] = None
   )
   type ServiceDescriptors = Map[String, ServiceDescriptor]
+
+  case class NodeServiceDescriptor
+  (
+    Node: String,
+    Address: String,
+    ServiceID: String,
+    ServiceName: String,
+    ServiceTags: Set[String],
+    ServiceAddress: String,
+    ServicePort: Int
+  )
+
+  case class NodeServiceDescriptors
+  (
+    Node: NodeDescriptor,
+    Services: Map[String, ServiceDescriptor]
+  )
 
   case class CheckDescriptor
   (
@@ -79,6 +96,7 @@ package object v1 {
     Port: Option[Int] = None,
     Check: Option[ServiceCheck] = None
   )
+
   case class ServiceCheck
   (
     Script: Option[String] = None,
@@ -86,6 +104,39 @@ package object v1 {
     Interval: Option[String] = None,
     TTL: Option[String] = None
   ) extends CheckValidation
+
+  case class RegisterNode
+  (
+    Node: String,
+    Address: String,
+    Datacenter: Option[String] = None,
+    Service: Option[ServiceDescriptor] = None,
+    Check: Option[CheckUpdateDescriptor] = None
+  ) {
+    if (Service.isDefined && Check.isDefined)
+      throw new IllegalArgumentException("Only Service or Check can be provided at the same time")
+  }
+
+  case class CheckUpdateDescriptor
+  (
+    Node: String,
+    CheckID: String,
+    Name: String,
+    Notes: String,
+    Status: String,
+    ServiceID: String
+  )
+
+  case class DeregisterNode
+  (
+    Node: String,
+    Datacenter: Option[String] = None,
+    ServiceID: Option[String] = None,
+    CheckID: Option[String] = None
+  ) {
+    if (ServiceID.isDefined && CheckID.isDefined)
+      throw new IllegalArgumentException("Only ServiceID or CheckID can be provided at the same time")
+  }
 
   private[v1] trait CheckValidation {
     def Script: Option[String]
