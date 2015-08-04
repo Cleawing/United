@@ -60,13 +60,17 @@ package object v1 {
     Node: String,
     CheckID: String,
     Name: String,
-    Status: String,
+    Status: CheckState.Value,
     Notes: String,
     Output: String,
     ServiceID: String,
     ServiceName: String
   )
   type CheckDescriptors = Map[String, CheckDescriptor]
+
+  object CheckState extends Enumeration {
+    val any, unknown, passing, warning, critical = Value
+  }
 
   case class HealthDescriptor
   (
@@ -136,6 +140,34 @@ package object v1 {
   ) {
     if (ServiceID.isDefined && CheckID.isDefined)
       throw new IllegalArgumentException("Only ServiceID or CheckID can be provided at the same time")
+  }
+
+  case class SessionDescriptor
+  (
+    LockDelay: Option[String] = None,
+    Name: Option[String] = None,
+    Node: Option[String] = None,
+    Checks: Option[Seq[String]] = None,
+    Behavior: Option[SessionBehavior.Value] = None,
+    TTL: Option[String] = None
+  )
+
+  case class SessionInfo
+  (
+    CreateIndex: Long,
+    ID: String,
+    Name: String,
+    Node: String,
+    Checks: Seq[String],
+    LockDelay: Long,
+    Behavior: SessionBehavior.Value,
+    TTL: String
+  )
+
+  case class SessionHolder(ID: String)
+
+  object SessionBehavior extends Enumeration {
+    val release, delete = Value
   }
 
   private[v1] trait CheckValidation {

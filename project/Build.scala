@@ -25,7 +25,7 @@ object Build extends Build {
   lazy val `akka-extensions` = (project in file("akka-extensions")).
     settings(commonSettings: _*).
     settings(
-      libraryDependencies ++= Seq(Dependencies.json4s)
+      libraryDependencies ++= Dependencies.json4s
         ++ Dependencies.akka ++ Dependencies.akkaStreamHttp,
         initialCommands in console :=
         """
@@ -39,14 +39,11 @@ object Build extends Build {
   lazy val `finagle-services` = (project in file("finagle-services")).
     settings(commonSettings: _*).
     settings(
-      libraryDependencies ++= Dependencies.finagle ++ Seq(Dependencies.json4s, Dependencies.ramlParser),
+      libraryDependencies ++= Dependencies.finagle ++ Dependencies.json4s ++ Seq(Dependencies.ramlParser),
       initialCommands in console :=
       """
         |import scala.concurrent.ExecutionContext.Implicits.global
-        |import com.cleawing.finagle.http.RamlClient
-        |import com.cleawing.finagle.http.RamlHelper
         |import com.cleawing.finagle.consul.Consul
-        |implicit val raml = RamlHelper("consul/v1.raml")
         |val consul = Consul("192.168.99.100").v1
       """.stripMargin
     )

@@ -4,17 +4,15 @@ import com.twitter.finagle.httpx.Response
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
-import org.json4s.NoTypeHints
-import org.json4s.jackson.Serialization
+import org.json4s.Formats
 import org.json4s.jackson.JsonMethods.parse
 import scala.collection.JavaConversions._
 
-class RamlClient(host: String, port: Int, label: String)(implicit raml: RamlHelper, ec: ExecutionContext) extends Client(host, port, label) {
+class RamlClient(host: String, port: Int, label: String)(implicit raml: RamlHelper, ec: ExecutionContext, formats: Formats) extends Client(host, port, label) {
   import RamlClient.Params
   import RamlClient.ResponseError
   import RamlClient.ResponseValidationError
   import scala.reflect.runtime.universe.typeOf
-  protected implicit val formats = Serialization.formats(NoTypeHints)
 
   def get[T: Manifest](uri: String, uriParams: Seq[Params] = Seq[Params](), queryParams: Seq[Params] = Seq[Params]())(implicit endpointUri: String) : Future[T] = {
     doRequest[T](s"$endpointUri/$uri", "get", uriParams, queryParams)
@@ -86,7 +84,7 @@ class RamlClient(host: String, port: Int, label: String)(implicit raml: RamlHelp
 
 object RamlClient {
   import scala.language.implicitConversions
-  def apply(host: String, port: Int, label: String)(implicit raml: RamlHelper, ec: ExecutionContext): RamlClient = new RamlClient(host, port, label)
+  def apply(host: String, port: Int, label: String)(implicit raml: RamlHelper, ec: ExecutionContext, formats: Formats): RamlClient = new RamlClient(host, port, label)
   type Params = (String, String)
   implicit def paramOptToSeq(opt: Option[Params]) : Seq[Params] = Seq.empty[Params] ++ opt.toList
 

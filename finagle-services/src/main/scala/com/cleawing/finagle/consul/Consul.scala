@@ -1,5 +1,8 @@
 package com.cleawing.finagle.consul
 
+import org.json4s.NoTypeHints
+import org.json4s.jackson.Serialization
+import org.json4s.ext.EnumNameSerializer
 import com.cleawing.finagle.http.{RamlClient, RamlHelper}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -8,6 +11,8 @@ class Consul(host: String, port: Int = 8500)(implicit ec: ExecutionContext) {
 
   object v1 {
     import com.cleawing.finagle.consul.v1._
+    protected implicit val formats = Serialization.formats(NoTypeHints) +
+      new EnumNameSerializer(CheckState) + new EnumNameSerializer(SessionBehavior)
     protected implicit val raml = RamlHelper("consul/v1.raml")
     protected implicit lazy val client = RamlClient(host, port, "consul")
 
@@ -71,8 +76,8 @@ class Consul(host: String, port: Int = 8500)(implicit ec: ExecutionContext) {
       def register(descriptor: RegisterNode) = client.put[Boolean]("register", payload = Some(descriptor))
       def deRegister(descriptor: DeregisterNode) = client.put[Boolean]("deregister", payload = Some(descriptor))
       def datacenters() = client.get[Seq[String]]("datacenters")
-      def nodes() = client.get[Seq[NodeDescriptor]]("nodes")
-      def services() = client.get[Map[String, Set[String]]]("services")
+      def nodes(dc: Option[String] = None) = client.get[Seq[NodeDescriptor]]("nodes", queryParams = dc.map("dc" -> _))
+      def services(dc: Option[String] = None) = client.get[Map[String, Set[String]]]("services", queryParams = dc.map("dc" -> _))
       def service(serviceName: String, dc: Option[String] = None, tag: Option[String] = None) =
         client.get[Seq[NodeServiceDescriptor]](
           "service/{service}",
@@ -85,6 +90,51 @@ class Consul(host: String, port: Int = 8500)(implicit ec: ExecutionContext) {
           Seq("node" -> nodeId),
           dc.map("dc" -> _)
         )
+    }
+
+    object session {
+      protected implicit val endpointUri = "/session"
+      def create(lockDelay: Option[String] = None,
+                 name: Option[String] = None,
+                 node: Option[String] = None,
+                 checks: Option[Seq[String]] = None,
+                 behavior: Option[SessionBehavior.Value] = None,
+                 ttl: Option[String] = None,
+                 dc: Option[String] = None) =
+      client.put[SessionHolder](
+        "create",
+        queryParams = dc.map("dc" -> _),
+        payload = Some(SessionDescriptor(lockDelay, name, node, checks, behavior, ttl))
+      )
+      def destroy(sessionHolder: SessionHolder, dc: Option[String] = None) =
+        client.put[Boolean](
+          "destroy/{session}",
+          Seq("session" -> sessionHolder.ID),
+          dc.map("dc" -> _)
+        )
+      def info(sessionHolder: SessionHolder, dc: Option[String] = None) =
+        client.get[Seq[SessionInfo]](
+          "info/{session}",
+          Seq("session" -> sessionHolder.ID),
+          dc.map("dc" -> _)
+        ).map(_.head)
+      def node(nodeId: String, dc: Option[String] = None) =
+        client.get[Seq[SessionInfo]](
+          "node/{node}",
+          Seq("node" -> nodeId),
+          dc.map("dc" -> _)
+        )
+      def list(dc: Option[String] = None) =
+        client.get[Seq[SessionInfo]](
+          "list",
+          queryParams =dc.map("dc" -> _)
+        )
+      def renew(sessionHolder: SessionHolder, dc: Option[String] = None) =
+        client.put[Seq[SessionInfo]](
+          "renew/{session}",
+          Seq("session" -> sessionHolder.ID),
+          dc.map("dc" -> _)
+        ).map(_.head)
     }
 
     object status {
@@ -104,8 +154,8 @@ class Consul(host: String, port: Int = 8500)(implicit ec: ExecutionContext) {
           "service/{service}",
           Seq("service" -> serviceName),
           dc.map("dc" -> _) ++ tag.map("tag" -> _) ++ (if(passing) Seq("passing" -> "true") else Seq()))
-      def state(stateId: String, dc: Option[String] = None) =
-        client.get[Seq[CheckDescriptor]]("state/{state}", Seq("state" -> stateId), dc.map("dc" -> _))
+      def state(state: CheckState.Value, dc: Option[String] = None) =
+        client.get[Seq[CheckDescriptor]]("state/{state}", Seq("state" -> state.toString), dc.map("dc" -> _))
     }
 
     def close(): Future[Unit] = client.close()

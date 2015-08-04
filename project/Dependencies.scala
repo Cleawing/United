@@ -34,7 +34,10 @@ object Dependencies {
     "com.typesafe.akka" %% "akka-http-testkit-experimental"   % Versions.akkaStreams % "test"
   )
 
-  lazy val json4s = "org.json4s" %% "json4s-jackson" % Versions.json4sJackson
+  lazy val json4s = Seq(
+    "org.json4s" %% "json4s-jackson" % Versions.json4sJackson,
+    "org.json4s" %% "json4s-ext" % Versions.json4sJackson
+  )
 
   lazy val ramlParser = "org.raml" % "raml-parser" % Versions.ramlParser
 

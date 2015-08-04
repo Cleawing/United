@@ -307,6 +307,11 @@ baseUri: http://127.0.0.1:8500/v1
             Succesfully retrieved list of nodes.
           body:
             application/json: !!null
+        500:
+          description: |
+            No path to datacenter.
+          body:
+            text/plain: !!null
   /services:
     get:
       description: |
@@ -323,6 +328,11 @@ baseUri: http://127.0.0.1:8500/v1
             The keys are the service names, and the array values provide all known tags for a given service.
           body:
             application/json: !!null
+        500:
+          description: |
+            No path to datacenter.
+          body:
+            text/plain: !!null
   /service:
     /{service}:
       uriParameters:
@@ -383,6 +393,155 @@ baseUri: http://127.0.0.1:8500/v1
           400:
             description: |
               Missing node name.
+            body:
+              text/plain: !!null
+          500:
+            description: |
+              No path to datacenter.
+            body:
+              text/plain: !!null
+/session:
+  /create:
+    put:
+      description: |
+        Used to initialize a new session.
+        Sessions must be associated with a node and may be associated with any number of checks.
+      queryParameters:
+        dc:
+          description: |
+            By default, the agent's local datacenter is used; another datacenter can be specified using this query parameter.
+            However, it is not recommended to use cross-datacenter sessions.
+          type: string
+      body:
+        application/json: !!null
+      responses:
+        200:
+          description: |
+            Returns the ID of the created session
+          body:
+            application/json: !!null
+        500:
+          description: |
+            No path to datacenter.
+          body:
+            text/plain: !!null
+  /destroy:
+    /{session}:
+      uriParameters:
+        session:
+          type: string
+          minLength: 1
+          # pattern: (use regexp for f971cad9-587d-47a8-8b5e-f3a5c00e985a format)
+          required: true
+      put:
+        description: |
+          Destroys the given session.
+        queryParameters:
+          dc:
+            description: |
+              By default, the agent's local datacenter is used; another datacenter can be specified using this query parameter.
+            type: string
+        responses:
+          200:
+            description: |
+              Succesfully destroyed session.
+          500:
+            description: |
+              No path to datacenter.
+            body:
+              text/plain: !!null
+  /info:
+    /{session}:
+      uriParameters:
+        session:
+          type: string
+          minLength: 1
+          # pattern: (use regexp for f971cad9-587d-47a8-8b5e-f3a5c00e985a format)
+          required: true
+      get:
+        description: |
+          Returns the requested session information within a given datacenter.
+        queryParameters:
+          dc:
+            description: |
+              By default, the agent's local datacenter is used; another datacenter can be specified using this query parameter.
+            type: string
+        responses:
+          200:
+            description: |
+              Succesfully retrieved session info.
+            body:
+              application/json: !!null
+          500:
+            description: |
+              No path to datacenter.
+            body:
+              text/plain: !!null
+  /node:
+    /{node}:
+      uriParameters:
+        node:
+          type: string
+          minLength: 1
+          required: true
+      get:
+        description: |
+          Returns the active sessions for a given node and datacenter.
+        queryParameters:
+          dc:
+            description: |
+              By default, the agent's local datacenter is used; another datacenter can be specified using this query parameter.
+            type: string
+        responses:
+          200:
+            description: |
+              Succesfully retrieved list of active sessions.
+            body:
+              application/json: !!null
+          500:
+            description: |
+              No path to datacenter.
+            body:
+              text/plain: !!null
+  /list:
+    get:
+      description: |
+        Returns the active sessions for a given datacenter.
+      queryParameters:
+        dc:
+          description: |
+            By default, the agent's local datacenter is used; another datacenter can be specified using this query parameter.
+          type: string
+      responses:
+        200:
+          description: |
+            Succesfully retrieved list of active sessions.
+          body:
+            application/json: !!null
+        500:
+          description: |
+            No path to datacenter.
+          body:
+            text/plain: !!null
+  /renew:
+    /{session}:
+      put:
+        description: |
+          Used with sessions that have a TTL, and it extends the expiration by the TTL.
+        queryParameters:
+          dc:
+            description: |
+              By default, the agent's local datacenter is used; another datacenter can be specified using this query parameter.
+            type: string
+        responses:
+          200:
+            description: |
+              Succesfully updated current session
+            body:
+              application/json: !!null
+          500:
+            description: |
+              No path to datacenter.
             body:
               text/plain: !!null
 /status:

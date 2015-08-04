@@ -5,16 +5,13 @@ import com.twitter.finagle.httpx.{Method, Request}
 import org.raml.model.parameter.AbstractParam
 import org.raml.model.{ParamType, Action, Resource}
 import org.raml.parser.visitor.RamlDocumentBuilder
-import org.json4s.NoTypeHints
+import org.json4s.Formats
 import org.json4s.jackson.Serialization
 
-
 import scala.util.Try
-
 import scala.collection.JavaConversions._
 
-class RamlHelper(resourceLocation: String) {
-  protected implicit val formats = Serialization.formats(NoTypeHints)
+class RamlHelper(resourceLocation: String)(implicit formats: Formats) {
   val raml = new RamlDocumentBuilder().build(resourceLocation)
 
   def buildRequestWithAction(uri: String, method: String,
@@ -84,5 +81,5 @@ class RamlHelper(resourceLocation: String) {
 }
 
 object RamlHelper {
-  def apply(resourceLocation: String) : RamlHelper = new RamlHelper(resourceLocation)
+  def apply(resourceLocation: String)(implicit formats: Formats) : RamlHelper = new RamlHelper(resourceLocation)
 }
