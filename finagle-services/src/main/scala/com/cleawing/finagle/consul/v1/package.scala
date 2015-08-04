@@ -228,6 +228,48 @@ package object v1 {
     PartialFunction.empty)
   )
 
+  case class Event
+  (
+    ID: String,
+    Name: String,
+    Payload: Option[String],
+    NodeFilter: String,
+    ServiceFilter: String,
+    TagFilter: String,
+    Version: Int,
+    LTime: Int
+  )
+
+  object EventSerializer extends CustomSerializer[Event](formats => (
+    {
+      case JObject
+        (
+          JField("ID", JString(id)) ::
+          JField("Name", JString(name)) ::
+          JField("Payload", JString(payload)) ::
+          JField("NodeFilter", JString(nodeFilter)) ::
+          JField("ServiceFilter", JString(serviceFilter)) ::
+          JField("TagFilter", JString(tagFilter)) ::
+          JField("Version", JInt(version)) ::
+          JField("LTime", JInt(lTime)) ::
+          Nil
+        ) => Event(id, name, Some(new String(Base64.getDecoder.decode(payload))), nodeFilter, serviceFilter, tagFilter, version.toInt, lTime.toInt)
+      case JObject
+        (
+          JField("ID", JString(id)) ::
+          JField("Name", JString(name)) ::
+          JField("Payload", JNull) ::
+          JField("NodeFilter", JString(nodeFilter)) ::
+          JField("ServiceFilter", JString(serviceFilter)) ::
+          JField("TagFilter", JString(tagFilter)) ::
+          JField("Version", JInt(version)) ::
+          JField("LTime", JInt(lTime)) ::
+          Nil
+        ) => Event(id, name, None, nodeFilter, serviceFilter, tagFilter, version.toInt, lTime.toInt)
+    },
+    PartialFunction.empty)
+  )
+
   private[v1] trait CheckValidation {
     def Script: Option[String]
     def HTTP: Option[String]

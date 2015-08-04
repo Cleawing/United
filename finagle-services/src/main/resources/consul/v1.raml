@@ -669,23 +669,6 @@ baseUri: http://127.0.0.1:8500/v1
               No path to datacenter.
             body:
               text/plain: !!null
-/status:
-  /leader:
-    get:
-      description: |
-        Returns the current Raft leader.
-      responses:
-        200:
-          body:
-            application/json: !!null
-  /peers:
-    get:
-      description: |
-        Returns the current Raft peer set.
-      responses:
-        200:
-          body:
-            application/json: !!null
 /health:
   /node:
     /{node}:
@@ -822,3 +805,83 @@ baseUri: http://127.0.0.1:8500/v1
               No path to datacenter.
             body:
               text/plain: !!null
+/event:
+  /fire:
+    /{name}:
+      uriParameters:
+        name:
+          minLength: 1
+          type: string
+          required: true
+      put:
+        description: |
+          Fires a new user event.
+        queryParameters:
+          dc:
+            description: |
+              By default, the datacenter of the agent is queried; however, the dc can be provided using this query parameter.
+            type: string
+          node:
+            description: |
+              A regular expression to filter by node name.
+            type: string
+          service:
+            description: |
+              A regular expression to filter by service name.
+            type: string
+          tag:
+            description: |
+              A regular expression to filter by service tag.
+            type: string
+        body:
+          application/x-www-form-urlencoded: !!null
+        responses:
+          200:
+            description: |
+              Succesfully created user event..
+            body:
+              application/json: !!null
+  /list:
+    get:
+      description: |
+        Returns the most recent events known by the agent
+      queryParameters:
+        name:
+          description: |
+            Filtering on events by name.
+          type: string
+        node:
+          description: |
+            A regular expression to filter by node name.
+          type: string
+        service:
+          description: |
+            A regular expression to filter by service name.
+          type: string
+        tag:
+          description: |
+            A regular expression to filter by service tag.
+          type: string
+      responses:
+        200:
+          description: |
+            Succesfully retrieved resource
+          body:
+            application/json: !!null
+/status:
+  /leader:
+    get:
+      description: |
+        Returns the current Raft leader.
+      responses:
+        200:
+          body:
+            application/json: !!null
+  /peers:
+    get:
+      description: |
+        Returns the current Raft peer set.
+      responses:
+        200:
+          body:
+            application/json: !!null

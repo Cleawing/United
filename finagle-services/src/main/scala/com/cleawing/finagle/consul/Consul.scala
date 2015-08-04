@@ -12,7 +12,7 @@ class Consul(host: String, port: Int = 8500)(implicit ec: ExecutionContext) {
   object v1 {
     import com.cleawing.finagle.consul.v1._
     protected implicit val formats = Serialization.formats(NoTypeHints) +
-      new EnumNameSerializer(CheckState) + new EnumNameSerializer(SessionBehavior) + KvValueSerializer
+      new EnumNameSerializer(CheckState) + new EnumNameSerializer(SessionBehavior) + KvValueSerializer + EventSerializer
     protected implicit val raml = RamlHelper("consul/v1.raml")
     protected implicit lazy val client = RamlClient(host, port, "consul")
 
@@ -179,12 +179,6 @@ class Consul(host: String, port: Int = 8500)(implicit ec: ExecutionContext) {
         ).map(_.head)
     }
 
-    object status {
-      protected implicit val endpointUri = "/status"
-      def leader() = client.get[String]("leader")
-      def peers() = client.get[Seq[String]]("peers")
-    }
-
     object health {
       protected implicit val endpointUri = "/health"
       def node(nodeId: String, dc: Option[String] = None) =
@@ -198,6 +192,28 @@ class Consul(host: String, port: Int = 8500)(implicit ec: ExecutionContext) {
           dc.map("dc" -> _) ++ tag.map("tag" -> _) ++ (if(passing) Seq("passing" -> "true") else Seq()))
       def state(state: CheckState.Value, dc: Option[String] = None) =
         client.get[Seq[CheckDescriptor]]("state/{state}", Seq("state" -> state.toString), dc.map("dc" -> _))
+    }
+
+    object event {
+      protected implicit val endpointUri = "/event"
+      def fire(name: String, payload: String = "", node: Option[String] = None, service: Option[String] = None, tag: Option[String] = None, dc: Option[String] = None) =
+        client.put[Event](
+          "fire/{name}",
+          Seq("name" -> name),
+          node.map("node" -> _) ++ service.map("service" -> _) ++ tag.map("tag" -> _) ++ dc.map("dc" -> _),
+          Some(payload)
+        )
+      def list(name: Option[String] = None, node: Option[String] = None, service: Option[String] = None, tag: Option[String] = None) =
+        client.get[Seq[Event]](
+          "list",
+          queryParams = name.map("name" -> _ ) ++ node.map("node" -> _) ++ service.map("service" -> _) ++ tag.map("tag" -> _)
+        )
+    }
+
+    object status {
+      protected implicit val endpointUri = "/status"
+      def leader() = client.get[String]("leader")
+      def peers() = client.get[Seq[String]]("peers")
     }
 
     def close(): Future[Unit] = client.close()
