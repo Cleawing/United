@@ -1,5 +1,10 @@
 package com.cleawing.finagle.consul
 
+import org.json4s.CustomSerializer
+import org.json4s.JsonDSL._
+import org.json4s._
+import java.util.Base64
+
 package object v1 {
   case class NodeDescriptor
   (
@@ -164,11 +169,64 @@ package object v1 {
     TTL: String
   )
 
-  case class SessionHolder(ID: String)
-
   object SessionBehavior extends Enumeration {
     val release, delete = Value
   }
+
+  case class KvValue
+  (
+    CreateIndex: Int,
+    ModifyIndex: Int,
+    LockIndex: Int,
+    Key: String,
+    Flags: Int,
+    Value: Option[String],
+    Session: Option[String]
+  )
+
+  object KvValueSerializer extends CustomSerializer[KvValue](formats => (
+    {
+      case JObject
+        (
+          JField("CreateIndex", JInt(createIndex)) ::
+          JField("ModifyIndex", JInt(modifyIndex)) ::
+          JField("LockIndex", JInt(lockIndex)) ::
+          JField("Key", JString(key)) ::
+          JField("Flags", JInt(flags)) ::
+          JField("Value", JString(encodedValue)) ::
+          JField("Session", JString(session)) :: Nil
+        ) => KvValue(createIndex.toInt, modifyIndex.toInt, lockIndex.toInt, key, flags.toInt, Some(new String(Base64.getDecoder.decode(encodedValue))), Some(session))
+      case JObject
+        (
+          JField("CreateIndex", JInt(createIndex)) ::
+          JField("ModifyIndex", JInt(modifyIndex)) ::
+          JField("LockIndex", JInt(lockIndex)) ::
+          JField("Key", JString(key)) ::
+          JField("Flags", JInt(flags)) ::
+          JField("Value", JString(encodedValue)) :: Nil
+        ) => KvValue(createIndex.toInt, modifyIndex.toInt, lockIndex.toInt, key, flags.toInt, Some(new String(Base64.getDecoder.decode(encodedValue))), None)
+      case JObject
+        (
+          JField("CreateIndex", JInt(createIndex)) ::
+          JField("ModifyIndex", JInt(modifyIndex)) ::
+          JField("LockIndex", JInt(lockIndex)) ::
+          JField("Key", JString(key)) ::
+          JField("Flags", JInt(flags)) ::
+          JField("Value", JNull) ::
+          JField("Session", JString(session)) :: Nil
+        ) => KvValue(createIndex.toInt, modifyIndex.toInt, lockIndex.toInt, key, flags.toInt, None, Some(session))
+      case JObject
+        (
+          JField("CreateIndex", JInt(createIndex)) ::
+          JField("ModifyIndex", JInt(modifyIndex)) ::
+          JField("LockIndex", JInt(lockIndex)) ::
+          JField("Key", JString(key)) ::
+          JField("Flags", JInt(flags)) ::
+          JField("Value", JNull) :: Nil
+        ) => KvValue(createIndex.toInt, modifyIndex.toInt, lockIndex.toInt, key, flags.toInt, None, None)
+    },
+    PartialFunction.empty)
+  )
 
   private[v1] trait CheckValidation {
     def Script: Option[String]

@@ -27,11 +27,16 @@ class RamlHelper(resourceLocation: String)(implicit formats: Formats) {
           case action =>
             val uri = buildUri(resource, action, uriParams, queryParams)
             val request = Request(Method(action.getType.toString), s"${raml.getBasePath}$uri")
-            if (action.getBody != null && action.getBody.contains("application/json")) {
+            if (action.getBody != null) {
               if (payload.isEmpty)
                 throw new IllegalArgumentException("Payload should be defined")
-              request.setContentTypeJson()
-              request.setContentString(Serialization.write(payload.get))
+              if (action.getBody.contains("application/json")) {
+                request.setContentTypeJson()
+                request.setContentString(Serialization.write(payload.get))
+              } else if (action.getBody.contains("application/x-www-form-urlencoded")) {
+                request.setContentType("application/x-www-form-urlencoded")
+                request.setContentString(payload.get.toString)
+              }
             }
             (request, action)
         }

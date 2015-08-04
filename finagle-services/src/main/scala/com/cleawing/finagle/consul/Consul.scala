@@ -12,9 +12,51 @@ class Consul(host: String, port: Int = 8500)(implicit ec: ExecutionContext) {
   object v1 {
     import com.cleawing.finagle.consul.v1._
     protected implicit val formats = Serialization.formats(NoTypeHints) +
-      new EnumNameSerializer(CheckState) + new EnumNameSerializer(SessionBehavior)
+      new EnumNameSerializer(CheckState) + new EnumNameSerializer(SessionBehavior) + KvValueSerializer
     protected implicit val raml = RamlHelper("consul/v1.raml")
     protected implicit lazy val client = RamlClient(host, port, "consul")
+
+    object kv {
+      protected implicit val endpointUri = "/kv"
+      def get(key: String, recurse: Boolean = false, dc: Option[String] = None) =
+        client.get[Seq[KvValue]](
+          "{key}",
+          Seq("key" -> key),
+          dc.map("dc" -> _) ++ Option(recurse).collect{ case true => "recurse" -> "true" }
+        ).recover {
+          case e: RamlClient.ResponseError => (e.getMessage, e.response.getStatusCode()) match {
+            case ("", 404) => throw e.copy(message = "Not Found")
+            case _ => throw e
+          }
+          case t: Throwable => throw t
+        }
+      def getRaw(key: String, dc: Option[String] = None) = {
+        client.get[String](
+          "{key}",
+          Seq("key" -> key),
+          Seq("raw" -> "true") ++  dc.map("dc" -> _)
+        )
+      }
+      def getKeys(key: String, separator: Option[String] = None, dc: Option[String] = None) =
+        client.get[Seq[String]](
+          "{key}",
+          Seq("key" -> key),
+          Seq("keys" -> "true") ++ separator.map("separator" -> _) ++  dc.map("dc" -> _)
+        ).map(r => r.filterNot(_ == key))
+      def put(key: String, value: String, flags: Option[Int] = None, acquire: Option[String] = None, release: Option[String] = None, dc: Option[String] = None) =
+        client.put[Boolean](
+          "{key}",
+          Seq("key" -> key),
+          flags.map("flags" -> _.toString) ++ acquire.map("acquire" -> _) ++ release.map("release" -> _) ++ dc.map("dc" -> _),
+          Some(value)
+        )
+      def delete(key: String, cas: Option[Int] = None, recurse : Boolean = false, dc: Option[String] = None) =
+        client.delete[Boolean](
+          "{key}",
+          Seq("key" -> key),
+          cas.map("cas" -> _.toString) ++ dc.map("dc" -> _) ++ Option(recurse).collect{ case true => "recurse" -> "true" }
+        )
+    }
 
     object agent {
       protected implicit val endpointUri = "/agent"
@@ -101,21 +143,21 @@ class Consul(host: String, port: Int = 8500)(implicit ec: ExecutionContext) {
                  behavior: Option[SessionBehavior.Value] = None,
                  ttl: Option[String] = None,
                  dc: Option[String] = None) =
-      client.put[SessionHolder](
+      client.put[Map[String, String]](
         "create",
         queryParams = dc.map("dc" -> _),
         payload = Some(SessionDescriptor(lockDelay, name, node, checks, behavior, ttl))
-      )
-      def destroy(sessionHolder: SessionHolder, dc: Option[String] = None) =
+      ).map(_("ID"))
+      def destroy(sessionId: String, dc: Option[String] = None) =
         client.put[Boolean](
           "destroy/{session}",
-          Seq("session" -> sessionHolder.ID),
+          Seq("session" -> sessionId),
           dc.map("dc" -> _)
         )
-      def info(sessionHolder: SessionHolder, dc: Option[String] = None) =
+      def info(sessionId: String, dc: Option[String] = None) =
         client.get[Seq[SessionInfo]](
           "info/{session}",
-          Seq("session" -> sessionHolder.ID),
+          Seq("session" -> sessionId),
           dc.map("dc" -> _)
         ).map(_.head)
       def node(nodeId: String, dc: Option[String] = None) =
@@ -129,10 +171,10 @@ class Consul(host: String, port: Int = 8500)(implicit ec: ExecutionContext) {
           "list",
           queryParams =dc.map("dc" -> _)
         )
-      def renew(sessionHolder: SessionHolder, dc: Option[String] = None) =
+      def renew(sessionId: String, dc: Option[String] = None) =
         client.put[Seq[SessionInfo]](
           "renew/{session}",
-          Seq("session" -> sessionHolder.ID),
+          Seq("session" -> sessionId),
           dc.map("dc" -> _)
         ).map(_.head)
     }

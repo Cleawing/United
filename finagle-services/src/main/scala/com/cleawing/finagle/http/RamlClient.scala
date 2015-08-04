@@ -26,6 +26,10 @@ class RamlClient(host: String, port: Int, label: String)(implicit raml: RamlHelp
     doRequest[T](s"$endpointUri/$uri", "put", uriParams, queryParams, payload)
   }
 
+  def delete[T: Manifest](uri: String, uriParams: Seq[Params] = Seq[Params](), queryParams: Seq[Params] = Seq[Params](), payload: Option[AnyRef] = None)(implicit endpointUri: String) : Future[T] = {
+    doRequest[T](s"$endpointUri/$uri", "delete", uriParams, queryParams, payload)
+  }
+
   protected def doRequest[T: Manifest](uri: String, method: String, uriParams: Seq[Params] = Seq[Params](),
                 queryParams: Seq[Params] = Seq[Params](), payload: Option[AnyRef] = None) : Future[T] = {
     val tpe = typeOf[T]
@@ -39,7 +43,11 @@ class RamlClient(host: String, port: Int, label: String)(implicit raml: RamlHelp
           )
         if (tpe =:= typeOf[Boolean]) {
           (response.getStatusCode() match {
-            case 200 => true
+            case 200 => response.getContentString() match {
+              case "" => true
+              case "true" => true
+              case "false" => false
+            }
             case code if Client.StatusCodes.clientError.contains(code) => false
             case _ => throw new ResponseError(response.getContentString(), response)
           }).asInstanceOf[T]
@@ -88,6 +96,10 @@ object RamlClient {
   type Params = (String, String)
   implicit def paramOptToSeq(opt: Option[Params]) : Seq[Params] = Seq.empty[Params] ++ opt.toList
 
-  class ResponseError(message: String, response: Response) extends IllegalStateException(message)
-  class ResponseValidationError(message: String, response: Response) extends ResponseError(message, response)
+  trait Error {
+    def message: String
+    def response: Response
+  }
+  case class ResponseError(message: String, response: Response) extends IllegalStateException(message) with Error
+  case class ResponseValidationError(message: String, response: Response) extends IllegalStateException(message) with Error
 }

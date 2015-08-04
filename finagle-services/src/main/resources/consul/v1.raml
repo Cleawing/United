@@ -3,6 +3,131 @@
 title: Hashicorp Consul API
 version: v1
 baseUri: http://127.0.0.1:8500/v1
+/kv:
+  /{key}:
+    uriParameters:
+      key:
+        type: string
+        required: true
+    get:
+      description: |
+        Retrieve value by provided key
+      queryParameters:
+        dc:
+          description: |
+            By default, the datacenter of the agent is queried; however, the dc can be provided using this query parameter.
+            It is important to note that each datacenter has its own KV store, and there is no built-in replication between datacenters.
+          type: string
+        keys:
+          description: |
+            It is possible to list just keys without their values by using the this query parameter.
+            This will return a list of the keys under the given prefix.
+          enum: [true]
+        raw:
+          description: |
+            If this query parameter is used with a non-recursive GET, the response is just the raw value of the key, without any encoding.
+          enum: [true]
+        recurse:
+          description: |
+            If this query parameter is provided, it will return all keys with the given prefix.
+          enum: [true]
+        separator:
+          description: |
+            can be used to list only up to a given separator
+          type: string
+      responses:
+        200:
+          description: |
+            Succesfully retrieved value by provided key
+          body:
+            application/json: !!null
+            "text/plain; charset=utf-8": !!null
+        404:
+          description: |
+            Key not found
+        500:
+          description: |
+            No path to datacenter.
+          body:
+            text/plain: !!null
+    put:
+      description: |
+        Consul expects the request body to be the value corresponding to the key.
+      queryParameters:
+        dc:
+          description: |
+            By default, the datacenter of the agent is queried; however, the dc can be provided using this query parameter.
+            It is important to note that each datacenter has its own KV store, and there is no built-in replication between datacenters.
+          type: string
+        flags:
+          description: |
+            This can be used to specify an unsigned value between 0 and 264-1.
+            Clients can choose to use this however makes sense for their application.
+          type: integer
+        cas:
+          description: |
+            This flag is used to turn the PUT into a Check-And-Set operation.
+            This is very useful as a building block for more complex synchronization primitives.
+            If the index is 0, Consul will only put the key if it does not already exist.
+            If the index is non-zero, the key is only set if the index matches the ModifyIndex of that key.
+          type: integer
+        acquire:
+          description: |
+            This flag is used to turn the PUT into a lock acquisition operation.
+            This is useful as it allows leader election to be built on top of Consul.
+            If the lock is not held and the session is valid, this increments the LockIndex
+            and sets the Session value of the key in addition to updating the key contents.
+            A key does not need to exist to be acquired.
+          type: string
+        release:
+          description: |
+            This flag is used to turn the PUT into a lock release operation.
+            This is useful when paired with "?acquire=" as it allows clients to yield a lock.
+            This will leave the LockIndex unmodified but will clear the associated Session of the key.
+            The key must be held by this session to be unlocked.
+          type: string
+      body:
+        application/x-www-form-urlencoded: !!null
+      responses:
+        200:
+          description: |
+            The return value is either true or false. If false is returned, the update has not taken place.
+          body:
+            application/json: !!null
+    delete:
+      description: |
+        Used to delete a single key or all keys sharing a prefix
+      queryParameters:
+        dc:
+          description: |
+            By default, the datacenter of the agent is queried; however, the dc can be provided using this query parameter.
+            It is important to note that each datacenter has its own KV store, and there is no built-in replication between datacenters.
+          type: string
+        recurse:
+          description: |
+            If this query parameter is provided, it will return all keys with the given prefix.
+          enum: [true]
+        cas:
+          description: |
+            This flag is used to turn the DELETE into a Check-And-Set operation.
+            This is very useful as a building block for more complex synchronization primitives.
+            Unlike PUT, the index must be greater than 0 for Consul to take any action: a 0 index will not delete the key.
+            If the index is non-zero, the key is only deleted if the index matches the ModifyIndex of that key.
+          type: integer
+      responses:
+        200:
+          description: |
+            Succesfully deleted value(s) by provided key
+          body:
+            application/json: !!null
+        404:
+          description: |
+            Key not found
+        500:
+          description: |
+            No path to datacenter.
+          body:
+            text/plain: !!null
 /agent:
   /checks:
     get:
