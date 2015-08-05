@@ -4,6 +4,8 @@ object Dependencies {
   object Versions {
     val typesafeConfig  = "1.3.0"
     val finagle         = "6.27.0"
+    val curator         = "2.8.0"
+    val etcd4j          = "2.7.0"
     val akka            = "2.4-M2"
     val akkaStreams     = "1.0"
     val json4sJackson   = "3.3.0.RC3"
@@ -17,6 +19,13 @@ object Dependencies {
   lazy val finagle = Seq(
     "com.twitter" %% "finagle-httpx" % Versions.finagle
   )
+
+  lazy val curator = Seq(
+    "org.apache.curator" % "curator-recipes"      % Versions.curator,
+    "org.apache.curator" % "curator-x-discovery"  % Versions.curator
+  )
+
+  lazy val etcd4j = "org.mousio" % "etcd4j" % Versions.etcd4j
 
   lazy val akka = Seq(
     "com.typesafe.akka" %% "akka-actor"   % Versions.akka,

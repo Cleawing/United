@@ -20,20 +20,20 @@ object Build extends Build {
   )
 
   lazy val united = (project in file(".")).
-    aggregate(`akka-extensions`, `finagle-services`)
+    aggregate(`akka-extensions`, `finagle-services`, inception)
 
   lazy val `akka-extensions` = (project in file("akka-extensions")).
     settings(commonSettings: _*).
     settings(
-      libraryDependencies ++= Dependencies.json4s
-        ++ Dependencies.akka ++ Dependencies.akkaStreamHttp,
-        initialCommands in console :=
-        """
-          |import akka.actor.ActorSystem
-          |import com.cleawing.akka.consul.Consul
-          |val system = ActorSystem()
-          |val consul = Consul(system)
-        """.stripMargin
+      libraryDependencies ++= Dependencies.json4s ++ Dependencies.akka
+        ++ Dependencies.akkaStreamHttp ++ Dependencies.curator ++ Seq(Dependencies.etcd4j)
+//        initialCommands in console :=
+//        """
+//          |import akka.actor.ActorSystem
+//          |import com.cleawing.akka.consul.Consul
+//          |val system = ActorSystem()
+//          |val consul = Consul(system)
+//        """.stripMargin
     )
 
   lazy val `finagle-services` = (project in file("finagle-services")).
@@ -47,4 +47,7 @@ object Build extends Build {
         |val consul = Consul("192.168.99.100").v1
       """.stripMargin
     )
+
+  lazy val inception = (project in file("inception")).
+    settings(commonSettings: _*).dependsOn(`akka-extensions`, `finagle-services`)
 }
