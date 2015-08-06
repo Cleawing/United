@@ -26,14 +26,13 @@ object Build extends Build {
     settings(commonSettings: _*).
     settings(
       libraryDependencies ++= Dependencies.json4s ++ Dependencies.akka
-        ++ Dependencies.akkaStreamHttp ++ Dependencies.curator ++ Seq(Dependencies.etcd4j)
-//        initialCommands in console :=
-//        """
-//          |import akka.actor.ActorSystem
-//          |import com.cleawing.akka.consul.Consul
-//          |val system = ActorSystem()
-//          |val consul = Consul(system)
-//        """.stripMargin
+        ++ Dependencies.akkaStreamHttp ++ Dependencies.curator ++ Seq(Dependencies.etcd4j),
+        initialCommands in console :=
+        """
+          |import akka.actor.ActorSystem
+          |val system = ActorSystem()
+          |
+        """.stripMargin
     )
 
   lazy val `finagle-services` = (project in file("finagle-services")).
