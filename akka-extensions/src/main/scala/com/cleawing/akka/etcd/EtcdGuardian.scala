@@ -14,7 +14,7 @@ private[etcd] class EtcdGuardian(peers: Seq[String], retryPolicy: RetryPolicy) e
     etcd.setRetryHandler(retryPolicy)
   }
 
-  def receive = Actor.emptyBehavior
+  def receive = Actor.ignoringBehavior
 
   override def postStop(): Unit = {
     etcd.close()

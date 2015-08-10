@@ -25,13 +25,18 @@ object Build extends Build {
   lazy val `akka-extensions` = (project in file("akka-extensions")).
     settings(commonSettings: _*).
     settings(
+      resolvers += "Confluent repository" at "http://packages.confluent.io/maven/",
       libraryDependencies ++= Dependencies.json4s ++ Dependencies.akka
-        ++ Dependencies.akkaStreamHttp ++ Dependencies.curator ++ Seq(Dependencies.etcd4j),
+        ++ Dependencies.akkaStreamHttp ++ Dependencies.curator ++ Seq(Dependencies.etcd4j, Dependencies.reactiveKafka)
+        ++ Dependencies.confluent,
         initialCommands in console :=
         """
           |import akka.actor.ActorSystem
-          |val system = ActorSystem()
-          |
+          |import com.cleawing.akka.EmptyActor
+          |import com.cleawing.akka.curator.Curator
+          |implicit val system = ActorSystem()
+          |val curator = Curator(system)
+          |val emptyActor = system.actorOf(EmptyActor.props())
         """.stripMargin
     )
 

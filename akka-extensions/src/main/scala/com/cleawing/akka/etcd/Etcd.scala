@@ -14,12 +14,14 @@ object Etcd
 private[etcd] class EtcdExt(system: ExtendedActorSystem) extends Extension {
   val settings = EtcdSettings(system)
 
-  private val guardian = system.systemActorOf(EtcdGuardian.props(settings.peers, settings.retryPolicy), "etcd")
+  private val guardian = system.systemActorOf(
+    EtcdGuardian.props(settings.peers, settings.retryPolicy), "etcd"
+  )
 }
 
 private[etcd] case class EtcdSettings (private val system: ActorSystem) {
   import scala.collection.JavaConversions._
-  val config = system.settings.config.getConfig("akka.etcd")
+  private val config = system.settings.config.getConfig("akka.etcd")
 
   val peers: Seq[String] = config.getStringList("peers")
 

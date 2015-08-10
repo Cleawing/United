@@ -6,6 +6,8 @@ object Dependencies {
     val finagle         = "6.27.0"
     val curator         = "2.8.0"
     val etcd4j          = "2.7.0"
+    val reactiveKafka   = "0.7.0"
+    val confluent       = "1.0"
     val akka            = "2.4-M2"
     val akkaStreams     = "1.0"
     val json4sJackson   = "3.3.0.RC3"
@@ -26,6 +28,12 @@ object Dependencies {
   )
 
   lazy val etcd4j = "org.mousio" % "etcd4j" % Versions.etcd4j
+
+  lazy val reactiveKafka = "com.softwaremill" %% "reactive-kafka" % Versions.reactiveKafka
+
+  lazy val confluent = Seq(
+    "io.confluent" % "kafka-avro-serializer" % Versions.confluent
+  )
 
   lazy val akka = Seq(
     "com.typesafe.akka" %% "akka-actor"   % Versions.akka,
