@@ -12,7 +12,6 @@ import scala.collection.concurrent
 
 private[curator] class LeaderLatch(curator: CuratorFramework) extends Actor with ActorLogging {
   import LeaderLatch._
-  private val pathPrefix = "leaderLatches"
   private val latchers = concurrent.TrieMap.empty[String, ActorRef]
   private val latchersCounter = new AtomicInteger(0)
 
@@ -34,7 +33,6 @@ private[curator] class LeaderLatch(curator: CuratorFramework) extends Actor with
             )
           )
         ) forward Watcher.Subscribe
-        Curator(context.system) ! Curator.Reaper.AddPath(internalPath, Some(Curator.buildPath(pathPrefix, "")), Reaper.Mode.REAP_UNTIL_GONE)
       } catch {
         case e: IllegalArgumentException => sender().tell(akka.actor.Status.Failure(e), Actor.noSender)
         case t: Throwable => throw t
@@ -74,6 +72,8 @@ object LeaderLatch {
 
   private[curator] def props(curator: CuratorFramework): Props  =
     Props(classOf[LeaderLatch], curator)
+
+  private[LeaderLatch] val pathPrefix = "leaderLatches"
 
   private[LeaderLatch] class Watcher(curator: CuratorFramework,
                                      path: String, closeMode: CloseMode.Value,
@@ -125,6 +125,7 @@ object LeaderLatch {
             leaderLatch.start()
           ref.tell(leaderPathCase, Actor.noSender)
           ref.tell(if (leaderLatch.hasLeadership) isLeaderCase else notLeaderCase, Actor.noSender)
+          Curator(context.system).tell(Curator.Reaper.AddPath(path, Some(Curator.buildPath(LeaderLatch.pathPrefix, "")), Reaper.Mode.REAP_UNTIL_GONE), context.parent)
         } else {
           log.error(new IllegalStateException(), "{} seems like terminated and can not be joined to LeaderLatch", ref)
         }

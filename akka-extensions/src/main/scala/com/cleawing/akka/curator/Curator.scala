@@ -33,6 +33,9 @@ object Curator
     sealed trait Request
 
     case class AddPath(path: String, recursiveFrom: Option[String] = None, mode: Mode.Value = Mode.REAP_INDEFINITELY) extends Request
+    object AddPath {
+      def apply(path: String, mode: Mode.Value): AddPath = new AddPath(path, None, mode)
+    }
     case class RemovePath(path: String) extends Request
   }
 
