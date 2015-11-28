@@ -32,7 +32,7 @@ private[curator] class LeaderLatch(curator: CuratorFramework) extends Actor with
               latchersCounter.incrementAndGet().toString
             )
           )
-        ) forward Watcher.Subscribe
+        ) forward Watcher.Join
       } catch {
         case e: IllegalArgumentException => sender().tell(akka.actor.Status.Failure(e), Actor.noSender)
         case t: Throwable => throw t
@@ -40,7 +40,7 @@ private[curator] class LeaderLatch(curator: CuratorFramework) extends Actor with
     case Curator.LeaderLatch.Left(path) =>
       val internalPath = Curator.buildPath(pathPrefix, path)
       if (latchers.contains(internalPath))
-        latchers(internalPath) forward Watcher.UnSubscribe
+        latchers(internalPath) forward Watcher.Left
       else {
         log.warning("LeaderLatch not started for path: {}", internalPath)
       }
@@ -66,9 +66,10 @@ object LeaderLatch {
     val SILENT, NOTIFY_LEADER = Value
   }
 
-  case class LeaderPath(path: String)
+  case class Joined(path: String)
   case class IsLeader(path: String)
   case class NotLeader(path: String)
+  case class Stopped(path: String)
 
   private[curator] def props(curator: CuratorFramework): Props  =
     Props(classOf[LeaderLatch], curator)
@@ -96,7 +97,7 @@ object LeaderLatch {
       }
     )
 
-    private val leaderPathCase  = LeaderPath(path)
+    private val joinedCase      = Joined(path)
     private val isLeaderCase    = IsLeader(path)
     private val notLeaderCase   = NotLeader(path)
 
@@ -115,25 +116,41 @@ object LeaderLatch {
     }
 
     def receive = {
-      case Subscribe =>
+      case Join =>
         addSubscriber(sender())
-      case UnSubscribe =>
+
+      case Left =>
         removeSubscriber(sender())
+
       case MayBeJoinFor(ref) =>
         if (subscribers.contains(ref)) {
-          if (leaderLatch.getState == leader.LeaderLatch.State.LATENT)
+          if (leaderLatch.getState == leader.LeaderLatch.State.LATENT) {
             leaderLatch.start()
-          ref.tell(leaderPathCase, Actor.noSender)
-          ref.tell(if (leaderLatch.hasLeadership) isLeaderCase else notLeaderCase, Actor.noSender)
-          Curator(context.system).tell(Curator.Reaper.AddPath(path, Some(Curator.buildPath(LeaderLatch.pathPrefix, "")), Reaper.Mode.REAP_UNTIL_GONE), context.parent)
+            Curator(context.system).tell(
+              Curator.Reaper.AddPath(
+                path,
+                Some(Curator.buildPath(LeaderLatch.pathPrefix, "")),
+                Reaper.Mode.REAP_UNTIL_GONE
+              ),
+              context.parent
+            )
+          }
+
+          self ! NotifyOnJoin(ref)
         } else {
-          log.error(new IllegalStateException(), "{} seems like terminated and can not be joined to LeaderLatch", ref)
+          log.error(new IllegalStateException(s"$ref seems like terminated and can not be joined to LeaderLatch"), "{} seems like terminated and can not be joined to LeaderLatch", ref)
         }
+
+      case NotifyOnJoin(ref) =>
+        ref.tell(joinedCase, Actor.noSender)
+        ref.tell(if (leaderLatch.hasLeadership) isLeaderCase else notLeaderCase, Actor.noSender)
+
       case NoSubscribersCountdown =>
         if (subscribers.isEmpty){
           log.debug("Stopping due idle {} without subscribers", idleTimeout)
           context.stop(self)
         }
+
       case Terminated(ref) =>
         removeSubscriber(ref, silent = true)
     }
@@ -141,6 +158,12 @@ object LeaderLatch {
     override def postStop(): Unit = {
       noSubscribersTimer.cancel()
       leaderLatch.removeListener(leaderLatchListener)
+      if (subscribers.nonEmpty) {
+        subscribers.foreach { subscriber =>
+          subscriber.tell(notLeaderCase, Actor.noSender)
+          subscriber.tell(LeaderLatch.Stopped(path), Actor.noSender)
+        }
+      }
       if (leaderLatch.getState == leader.LeaderLatch.State.STARTED)
         leaderLatch.close()
     }
@@ -149,10 +172,11 @@ object LeaderLatch {
       if (!subscribers.contains(ref)) {
         context.watch(ref)
         subscribers += ref
+        context.system.scheduler.scheduleOnce(20.milliseconds, self, MayBeJoinFor(ref))
       } else {
         log.warning("Already joined: {}", ref)
+        self ! NotifyOnJoin(ref)
       }
-      context.system.scheduler.scheduleOnce(20.milliseconds, self, MayBeJoinFor(ref))
     }
 
     private def removeSubscriber(ref: ActorRef, silent: Boolean = false): Unit = {
@@ -175,12 +199,13 @@ object LeaderLatch {
   }
 
   private[LeaderLatch] object Watcher {
-    private[LeaderLatch] case object Subscribe
-    private[LeaderLatch] case object UnSubscribe
+    private[LeaderLatch] case object Join
+    private[LeaderLatch] case object Left
     private[Watcher] case object NoSubscribersCountdown
     private[Watcher] case class MayBeJoinFor(ref: ActorRef)
+    private[Watcher] case class NotifyOnJoin(ref: ActorRef)
 
     private[LeaderLatch] def props(curator: CuratorFramework, path: String, closeMode: CloseMode.Value, idleTimeout: FiniteDuration): Props =
-      Props(classOf[Watcher], curator, path, closeMode, idleTimeout)
+      Props(classOf[Watcher], curator, path, closeMode, idleTimeout).withMailbox("akka.actor.mailbox.safe-unbounded-queue-based")
   }
 }

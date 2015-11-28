@@ -27,8 +27,7 @@ object Build extends Build {
     settings(
       resolvers += "Confluent repository" at "http://packages.confluent.io/maven/",
       libraryDependencies ++= Dependencies.json4s ++ Dependencies.akka
-        ++ Dependencies.akkaStreamHttp ++ Dependencies.curator ++ Seq(Dependencies.etcd4j, Dependencies.reactiveKafka)
-        ++ Dependencies.confluent,
+        ++ Dependencies.akkaStreamHttp ++ Dependencies.curator ++ Seq(Dependencies.etcd4j, Dependencies.reactiveKafka),
         initialCommands in console :=
         """
           |import akka.actor.ActorSystem
